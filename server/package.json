@@ -1,0 +1,15 @@
+{
+  "name": "manzoni-muito-burro-server",
+  "version": "0.1.0",
+  "description": "Servidor de sinalização (salas, chat, WebRTC)",
+  "main": "src/index.js",
+  "type": "module",
+  "scripts": {
+    "dev": "node --watch src/index.js"
+  },
+  "dependencies": {
+    "cors": "^2.8.5",
+    "express": "^4.19.2",
+    "socket.io": "^4.7.5"
+  }
+}
