@@ -159,8 +159,6 @@ export default function Room({
   useEffect(() => {
     fimDaListaRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [mensagens, canalTextoAtualId]);
-
-  // Medidor de nível do microfone em tempo real — só roda com o modal aberto
   useEffect(() => {
     if (!mostrarConfiguracoes) return;
     const id = setInterval(() => {
@@ -346,7 +344,6 @@ export default function Room({
     entradaIdRef.current = deviceId;
     if (gerenciadorRef.current) {
       await gerenciadorRef.current.trocarEntrada(deviceId);
-      // Se estava testando o mic, reconecta o teste na nova fonte.
       if (testandoMic && monitorAudioRef.current) {
         monitorAudioRef.current.srcObject = gerenciadorRef.current.obterStreamLocal();
       }
@@ -378,8 +375,7 @@ export default function Room({
   }
 
   function alternarTesteMicrofone() {
-    if (!gerenciadorRef.current) return; // precisa estar num canal de voz
-
+    if (!gerenciadorRef.current) return;
     if (!testandoMic) {
       const stream = gerenciadorRef.current.obterStreamLocal();
       if (!stream) return;

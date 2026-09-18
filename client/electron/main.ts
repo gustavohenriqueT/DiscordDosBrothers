@@ -50,9 +50,9 @@ function createWindow() {
 		win.webContents.openDevTools({ mode: "detach" });
 	} else {
 		win.loadFile(path.join(__dirname, "../dist/index.html"));
+		win.webContents.openDevTools({ mode: "detach" });
 	}
 }
-
 // --- IPC: ponte entre a interface (React) e o armazenamento local ---
 ipcMain.handle("profile:get", () => {
 	return store.get("profile");

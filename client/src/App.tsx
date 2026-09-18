@@ -40,8 +40,6 @@ export default function App() {
 	}
 
 	function sairDaSala() {
-		// Desconectar e reconectar o socket faz o servidor limpar sua presença
-		// na sala automaticamente (evento "disconnect" do lado do servidor).
 		socket.disconnect();
 		socket.connect();
 		setSala(null);

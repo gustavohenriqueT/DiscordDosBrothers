@@ -1,9 +1,6 @@
-// Estado das salas fica em memória: se o servidor reiniciar, as salas somem.
-// Para o uso pretendido (você + amigos, sessões pontuais) isso é suficiente.
-
 const rooms = new Map(); // codigo -> { code, participants, channels }
 
-const ALFABETO = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789"; // sem O/0/I/1 pra evitar confusão visual
+const ALFABETO = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
 
 function gerarCodigo() {
   let codigo;
@@ -20,7 +17,7 @@ function slugify(nome) {
     nome
       .toLowerCase()
       .normalize("NFD")
-      .replace(/[\u0300-\u036f]/g, "") // remove acentos
+      .replace(/[\u0300-\u036f]/g, "")
       .replace(/[^a-z0-9]+/g, "-")
       .replace(/(^-|-$)/g, "")
       .slice(0, 24) || "canal"
@@ -34,7 +31,6 @@ export function criarSala() {
     participants: new Map(),
     channels: new Map(),
   };
-  // Toda sala nova já começa com um canal de texto e um de voz padrão.
   sala.channels.set("geral", { id: "geral", name: "geral", type: "text" });
   sala.channels.set("geral-voz", {
     id: "geral-voz",

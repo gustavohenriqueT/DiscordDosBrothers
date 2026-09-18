@@ -215,9 +215,6 @@ export function criarGerenciadorDeVoz(
 		return localStream;
 	}
 
-	// Troca só a fonte de captura (o microfone físico). O stream que sai pros
-	// peers (destino.stream) continua o mesmo objeto — por isso não precisa
-	// renegociar a conexão com ninguém ao trocar de dispositivo.
 	async function trocarEntrada(deviceId: string) {
 		if (!audioCtx || !analyser || !gateGain) return;
 		const novoStream = await navigator.mediaDevices.getUserMedia({

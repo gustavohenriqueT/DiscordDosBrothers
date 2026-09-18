@@ -26,5 +26,20 @@
     "typescript": "^5.5.3",
     "vite": "^5.3.1",
     "wait-on": "^7.2.0"
+  },
+  "build": {
+    "appId": "com.gustavo.discorddosbrothers",
+    "productName": "Manzoni Muito Burro",
+    "files": [
+      "dist/**/*",
+      "dist-electron/**/*"
+    ],
+    "win": {
+      "target": "nsis"
+    },
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true
+    }
   }
 }
