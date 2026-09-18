@@ -16,8 +16,6 @@ type Profile = {
 	avatarEmoji: string;
 };
 
-// Permite rodar múltiplas instâncias do app com perfis diferentes,
-// usando: $env:PERFIL="pessoa1" antes de npm run electron:dev.
 const sufixoPerfil = process.env.PERFIL;
 if (sufixoPerfil) {
 	app.setPath(
