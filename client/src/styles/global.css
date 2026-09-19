@@ -1051,3 +1051,92 @@ video:fullscreen {
   background: var(--bg-raised);
   color: var(--text);
 }
+
+.seletor-tela-modal {
+  background: var(--bg-elevated);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  padding: 2rem;
+  width: 42rem;
+  max-height: 80vh;
+  overflow-y: auto;
+  box-shadow: var(--shadow-lift);
+}
+
+.seletor-tela-modal h2 {
+  font-family: "Fraunces", serif;
+  font-size: 1.3rem;
+  margin: 0 0 1rem;
+}
+
+.seletor-tela-audio {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.85rem;
+  color: var(--text-dim);
+  margin-bottom: 1.2rem;
+}
+
+.seletor-tela-grade {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+  gap: 0.8rem;
+  margin-bottom: 1.2rem;
+}
+
+.seletor-tela-item {
+  background: var(--bg-raised);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: 0.5rem;
+  cursor: pointer;
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+  text-align: left;
+  transition: border-color 0.12s ease;
+}
+
+.seletor-tela-item:hover {
+  border-color: var(--accent);
+}
+
+.seletor-tela-item img {
+  width: 100%;
+  aspect-ratio: 16 / 9;
+  object-fit: cover;
+  border-radius: 6px;
+  background: #000;
+}
+
+.seletor-tela-item span {
+  font-size: 0.75rem;
+  color: var(--text-dim);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.tela-item__expandir {
+  position: absolute;
+  top: 0.5rem;
+  right: 0.5rem;
+  background: rgba(0, 0, 0, 0.6);
+  border: none;
+  color: var(--text);
+  border-radius: 6px;
+  width: 28px;
+  height: 28px;
+  cursor: pointer;
+  font-size: 0.95rem;
+  opacity: 0;
+  transition: opacity 0.15s ease, background 0.15s ease;
+}
+
+.tela-item:hover .tela-item__expandir {
+  opacity: 1;
+}
+
+.tela-item__expandir:hover {
+  background: rgba(0, 0, 0, 0.8);
+}

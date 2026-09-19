@@ -8,6 +8,11 @@ import {
 } from "electron";
 import Store from "electron-store";
 
+app.commandLine.appendSwitch(
+	"disable-features",
+	"AllowWgcScreenCapturer,AllowWgcWindowCapturer",
+);
+
 // Formato do perfil salvo localmente no disco do usuário (sem servidor, sem login)
 type Profile = {
 	id: string;
@@ -45,10 +50,8 @@ function createWindow() {
 	const devServerUrl = process.env.VITE_DEV_SERVER_URL;
 	if (devServerUrl) {
 		win.loadURL(devServerUrl);
-		win.webContents.openDevTools({ mode: "detach" });
 	} else {
 		win.loadFile(path.join(__dirname, "../dist/index.html"));
-		win.webContents.openDevTools({ mode: "detach" });
 	}
 }
 // --- IPC: ponte entre a interface (React) e o armazenamento local ---
@@ -63,14 +66,49 @@ ipcMain.handle("profile:save", (_event, profile: Profile) => {
 
 app.whenReady().then(() => {
 	// Necessário para o getDisplayMedia() funcionar no Electron ---
-	(session.defaultSession.setDisplayMediaRequestHandler as any)(
-		async (_request: any, callback: any) => {
+	session.defaultSession.setDisplayMediaRequestHandler(
+		async (_request, callback) => {
 			const sources = await desktopCapturer.getSources({
 				types: ["screen", "window"],
+				thumbnailSize: { width: 320, height: 180 },
 			});
-			callback({ video: sources[0], audio: "loopback" });
+
+			const fontes = sources.map((s) => ({
+				id: s.id,
+				name: s.name,
+				thumbnail: s.thumbnail.toDataURL(),
+				type: s.id.startsWith("screen") ? "screen" : "window",
+			}));
+
+			const janelaAtiva = BrowserWindow.getAllWindows()[0];
+
+			const escolha = await new Promise<{
+				sourceId: string | null;
+				incluirAudio: boolean;
+			}>((resolve) => {
+				ipcMain.once("captura:escolha-respondida", (_event, resposta) =>
+					resolve(resposta),
+				);
+				janelaAtiva?.webContents.send("captura:solicitar-escolha", fontes);
+			});
+
+			if (!escolha.sourceId) {
+				callback({}); // usuário cancelou a seleção
+				return;
+			}
+
+			const fonteEscolhida = sources.find((s) => s.id === escolha.sourceId);
+			if (!fonteEscolhida) {
+				callback({});
+				return;
+			}
+
+			callback(
+				escolha.incluirAudio
+					? { video: fonteEscolhida, audio: "loopback" }
+					: { video: fonteEscolhida },
+			);
 		},
-		{ useSystemPicker: true },
 	);
 
 	createWindow();

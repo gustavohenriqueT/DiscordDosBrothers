@@ -7,20 +7,22 @@ type PeerConnections = Map<string, RTCPeerConnection>;
 export function criarGerenciadorDeVoz(
 	onRemoteAudioStream: (peerId: string, stream: MediaStream) => void,
 	onRemoteVideoStream: (peerId: string, stream: MediaStream) => void,
+	onRemoteScreenAudioStream: (peerId: string, stream: MediaStream) => void,
 	onPeerRemovido: (peerId: string) => void,
 	onCompartilhamentoEncerradoPeloNavegador: () => void,
+	onPeerParouDeCompartilhar: (peerId: string) => void,
 ) {
 	const conexoes: PeerConnections = new Map();
-	let rawMicStream: MediaStream | null = null;
 	let localStream: MediaStream | null = null;
 	let localScreenStream: MediaStream | null = null;
+
 	let audioCtx: AudioContext | null = null;
 	let micSource: MediaStreamAudioSourceNode | null = null;
 	let analyser: AnalyserNode | null = null;
 	let gateGain: GainNode | null = null;
 	let destino: MediaStreamAudioDestinationNode | null = null;
 	let manualMudo = false;
-	let sensibilidade = 5;
+	let sensibilidade = 15;
 	let nivelAtual = 0;
 	let loopId: number | null = null;
 	let ultimaVezAcimaDoLimiar = 0;
@@ -71,6 +73,11 @@ export function criarGerenciadorDeVoz(
 
 		adicionarTracksLocais(pc);
 
+		// Cada conexão recebe primeiro o áudio do microfone (criado junto da
+		// chamada de voz). Qualquer áudio adicional que chegue depois só pode
+		// ser o áudio do compartilhamento de tela, adicionado posteriormente.
+		let microfoneJaRecebido = false;
+
 		pc.onicecandidate = (event) => {
 			if (event.candidate) {
 				socket.emit("webrtc:signal", {
@@ -85,10 +92,21 @@ export function criarGerenciadorDeVoz(
 		};
 
 		pc.ontrack = (event) => {
-			if (event.track.kind === "video") {
+			const track = event.track;
+
+			if (track.kind === "video") {
 				onRemoteVideoStream(peerId, event.streams[0]);
-			} else {
+				track.onended = () => onPeerParouDeCompartilhar(peerId);
+				return;
+			}
+
+			// kind === "audio"
+			if (!microfoneJaRecebido) {
+				microfoneJaRecebido = true;
 				onRemoteAudioStream(peerId, event.streams[0]);
+			} else {
+				onRemoteScreenAudioStream(peerId, event.streams[0]);
+				track.onended = () => onPeerParouDeCompartilhar(peerId);
 			}
 		};
 
@@ -136,7 +154,9 @@ export function criarGerenciadorDeVoz(
 		}
 	}
 
-	async function iniciarCompartilhamentoDeTela(): Promise<MediaStream> {
+	async function iniciarCompartilhamentoDeTela(fonte?: {
+		sourceId?: string;
+	}): Promise<MediaStream> {
 		const stream = await navigator.mediaDevices.getDisplayMedia({
 			video: true,
 			audio: true,
@@ -158,11 +178,12 @@ export function criarGerenciadorDeVoz(
 
 	async function pararCompartilhamentoDeTela() {
 		if (!localScreenStream) return;
-		const trackDeVideo = localScreenStream.getVideoTracks()[0];
 
 		conexoes.forEach((pc) => {
-			const sender = pc.getSenders().find((s) => s.track === trackDeVideo);
-			if (sender) pc.removeTrack(sender);
+			localScreenStream!.getTracks().forEach((track) => {
+				const sender = pc.getSenders().find((s) => s.track === track);
+				if (sender) pc.removeTrack(sender);
+			});
 		});
 
 		localScreenStream.getTracks().forEach((t) => t.stop());
@@ -184,16 +205,15 @@ export function criarGerenciadorDeVoz(
 		gateGain?.disconnect();
 		analyser?.disconnect();
 		audioCtx?.close();
-		rawMicStream?.getTracks().forEach((t) => t.stop());
+		localStream?.getTracks().forEach((t) => t.stop());
 		localScreenStream?.getTracks().forEach((t) => t.stop());
-		rawMicStream = null;
 		localStream = null;
 		localScreenStream = null;
 		audioCtx = null;
 	}
 
 	async function iniciar(deviceId?: string): Promise<MediaStream> {
-		rawMicStream = await navigator.mediaDevices.getUserMedia({
+		const rawMicStream = await navigator.mediaDevices.getUserMedia({
 			audio: deviceId ? { deviceId: { exact: deviceId } } : true,
 		});
 
@@ -220,10 +240,8 @@ export function criarGerenciadorDeVoz(
 		const novoStream = await navigator.mediaDevices.getUserMedia({
 			audio: { deviceId: { exact: deviceId } },
 		});
-		rawMicStream?.getTracks().forEach((t) => t.stop());
 		micSource?.disconnect();
-		rawMicStream = novoStream;
-		micSource = audioCtx.createMediaStreamSource(rawMicStream);
+		micSource = audioCtx.createMediaStreamSource(novoStream);
 		micSource.connect(analyser);
 		micSource.connect(gateGain);
 	}
