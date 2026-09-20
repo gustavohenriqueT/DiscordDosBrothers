@@ -73,9 +73,6 @@ export function criarGerenciadorDeVoz(
 
 		adicionarTracksLocais(pc);
 
-		// Cada conexão recebe primeiro o áudio do microfone (criado junto da
-		// chamada de voz). Qualquer áudio adicional que chegue depois só pode
-		// ser o áudio do compartilhamento de tela, adicionado posteriormente.
 		let microfoneJaRecebido = false;
 
 		pc.onicecandidate = (event) => {
@@ -100,7 +97,6 @@ export function criarGerenciadorDeVoz(
 				return;
 			}
 
-			// kind === "audio"
 			if (!microfoneJaRecebido) {
 				microfoneJaRecebido = true;
 				onRemoteAudioStream(peerId, event.streams[0]);
@@ -154,21 +150,43 @@ export function criarGerenciadorDeVoz(
 		}
 	}
 
+	async function ajustarQualidadeDeVideo(pc: RTCPeerConnection) {
+		const sender = pc
+			.getSenders()
+			.find(
+				(s) => s.track?.kind === "video" && s.track?.contentHint === "motion",
+			);
+		if (!sender) return;
+
+		const params = sender.getParameters();
+		if (!params.encodings || params.encodings.length === 0) {
+			params.encodings = [{}];
+		}
+		params.encodings[0].maxBitrate = 4_000_000; // ~4 Mbps, bom para 1080p60 com movimento
+		await sender.setParameters(params);
+	}
+
 	async function iniciarCompartilhamentoDeTela(fonte?: {
 		sourceId?: string;
 	}): Promise<MediaStream> {
 		const stream = await navigator.mediaDevices.getDisplayMedia({
-			video: true,
+			video: {
+				frameRate: { ideal: 60, max: 60 },
+			},
 			audio: true,
 		});
 		localScreenStream = stream;
+
+		const trackDeVideo = stream.getVideoTracks()[0];
+		trackDeVideo.contentHint = "motion";
 
 		conexoes.forEach((pc) => {
 			stream.getTracks().forEach((track) => pc.addTrack(track, stream));
 		});
 		await renegociarComTodos();
+		conexoes.forEach((pc) => ajustarQualidadeDeVideo(pc));
 
-		stream.getVideoTracks()[0].onended = () => {
+		trackDeVideo.onended = () => {
 			pararCompartilhamentoDeTela();
 			onCompartilhamentoEncerradoPeloNavegador();
 		};
