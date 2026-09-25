@@ -51,6 +51,15 @@ function IconMic({ ativo }: { ativo: boolean }) {
 	);
 }
 
+function IconVolume() {
+  return (
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5" />
+      <path d="M15.5 8.5a5 5 0 0 1 0 7" />
+    </svg>
+  );
+}
+
 function IconFone({ ativo }: { ativo: boolean }) {
 	return (
 		<svg
@@ -631,58 +640,46 @@ export default function Room({
 									</button>
 									{c.members.length > 0 && (
 										<ul className="canal-membros">
-											{c.members.map((m) => {
-												const souEu = m.socketId === socket.id;
-												return (
-													<li key={m.socketId}>
-														<button
-															className="membro-linha"
-															onClick={() =>
-																!souEu &&
-																setVolumeAbertoPara(
-																	volumeAbertoPara === m.socketId
-																		? null
-																		: m.socketId,
-																)
-															}
-														>
-															<span
-																className="avatar-badge avatar-badge--tiny"
-																style={{ background: m.avatarColor }}
-															>
-																{m.avatarEmoji}
-															</span>
-															<span className="canal-membro__nome">
-																{m.name}
-															</span>
-															<span className="canal-membro__icones">
-																{m.muted && <IconMic ativo={false} />}
-																{m.deafened && <IconFone ativo={false} />}
-															</span>
-														</button>
-														{volumeAbertoPara === m.socketId && !souEu && (
-															<div className="volume-usuario">
-																<span>Volume do usuário</span>
-																<input
-																	type="range"
-																	min={0}
-																	max={200}
-																	value={perUserVolume[m.socketId] ?? 100}
-																	onChange={(e) =>
-																		ajustarVolumeDoUsuario(
-																			m.socketId,
-																			Number(e.target.value),
-																		)
-																	}
-																/>
-																<span className="volume-usuario__valor">
-																	{perUserVolume[m.socketId] ?? 100}%
-																</span>
-															</div>
-														)}
-													</li>
-												);
-											})}
+                      {c.members.map((m) => {
+                        const souEu = m.socketId === socket.id;
+                        const volumeDele = perUserVolume[m.socketId] ?? 100;
+                        return (
+                          <li key={m.socketId} className="canal-membro-wrapper">
+                            <button
+                              className="membro-linha"
+                              onClick={() => !souEu && setVolumeAbertoPara(volumeAbertoPara === m.socketId ? null : m.socketId)}
+                            >
+                              <span className="avatar-badge avatar-badge--tiny" style={{ background: m.avatarColor }}>
+                                {m.avatarEmoji}
+                              </span>
+                              <span className="canal-membro__nome">{m.name}</span>
+                              {!souEu && volumeDele !== 100 && (
+                                <span className="canal-membro__volume-badge">{volumeDele}%</span>
+                              )}
+                              <span className="canal-membro__icones">
+                                {m.muted && <IconMic ativo={false} />}
+                                {m.deafened && <IconFone ativo={false} />}
+                              </span>
+                            </button>
+                            {volumeAbertoPara === m.socketId && !souEu && (
+                              <div className="volume-usuario">
+                                <IconVolume />
+                                <input
+                                  type="range"
+                                  min={0}
+                                  max={200}
+                                  value={volumeDele}
+                                  onChange={(e) => ajustarVolumeDoUsuario(m.socketId, Number(e.target.value))}
+                                  style={{
+                                    background: `linear-gradient(to right, var(--accent) ${volumeDele / 2}%, var(--border) ${volumeDele / 2}%)`,
+                                  }}
+                                />
+                                <span className="volume-usuario__valor">{volumeDele}%</span>
+                              </div>
+                            )}
+                          </li>
+                        );
+                      })}
 										</ul>
 									)}
 								</li>
@@ -762,7 +759,6 @@ export default function Room({
 						</div>
 					)}
 				</nav>
-
 				<aside className="room__participantes">
 					<h2>Quem está aqui</h2>
 					<ul>
